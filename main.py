@@ -21,11 +21,17 @@ def fetch_service_account_data():
         name = sa["name"]
 
         keys = service.projects().serviceAccounts().keys().list(name=name).execute()
-        if "keys" not in keys:
-            report += f"🔹 {email} — No keys found\n"
+        # Filter for user-managed keys only
+        user_managed_keys = [
+            key for key in keys.get("keys", [])
+            if key.get("keyType") == "USER_MANAGED"
+        ]
+
+        if not user_managed_keys:
+            report += f"🔹 {email} — No user-managed keys found\n"
             continue
 
-        for key in keys["keys"]:
+        for key in user_managed_keys:
             key_id = key.get("name", "").split("/")[-1]
             expiry = key.get("validBeforeTime")
 
@@ -64,3 +70,4 @@ def send_notification(event, context):
         print("✅ Email sent successfully.")
     except Exception as e:
         print(f"❌ Error in send_notification: {e}")
+
